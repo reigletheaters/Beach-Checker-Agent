@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beach Day Checker — Irvine, CA</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .location-icon { font-size: 20px; }
+
+    .location-text h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .location-text p {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .refresh-btn {
+      background: #f5f5f5;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      color: #555;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+
+    .refresh-btn:hover { background: #ebebeb; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+
+    .stat {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .stat-sub {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .verdict {
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .verdict.go {
+      background: #ecfdf5;
+      border: 1.5px solid #6ee7b7;
+    }
+
+    .verdict.nogo {
+      background: #fff1f2;
+      border: 1.5px solid #fca5a5;
+    }
+
+    .verdict-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .verdict-emoji { font-size: 28px; }
+
+    .verdict-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .verdict.go .verdict-title { color: #065f46; }
+    .verdict.nogo .verdict-title { color: #991b1b; }
+
+    .verdict-reason {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #444;
+    }
+
+    .uv-advice {
+      background: #f8f9fa;
+      border-left: 3px solid #d1d5db;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 14px;
+      margin-bottom: 1rem;
+    }
+
+    .uv-advice.low { border-left-color: #6ee7b7; }
+    .uv-advice.moderate { border-left-color: #fcd34d; }
+    .uv-advice.high { border-left-color: #fb923c; }
+    .uv-advice.veryhigh { border-left-color: #f87171; }
+    .uv-advice.extreme { border-left-color: #c084fc; }
+
+    .uv-advice-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .uv-advice-text {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .updated {
+      font-size: 12px;
+      color: #bbb;
+      text-align: right;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem 0;
+      color: #aaa;
+    }
+
+    .loading-spinner {
+      font-size: 36px;
+      display: block;
+      margin-bottom: 12px;
+      animation: spin 1.5s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .error {
+      text-align: center;
+      padding: 2rem 0;
+      color: #e53e3e;
+    }
+
+    .error-icon { font-size: 36px; margin-bottom: 12px; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <div class="location">
+      <span class="location-icon">📍</span>
+      <div class="location-text">
+        <h1>Irvine, CA</h1>
+        <p>Beach day checker</p>
+      </div>
+    </div>
+    <button class="refresh-btn" onclick="fetchWeather()">
+      ↻ Refresh
+    </button>
+  </div>
+
+  <div id="loading" class="loading">
+    <span class="loading-spinner">🌊</span>
+    <p>Fetching live weather...</p>
+  </div>
+
+  <div id="content" class="hidden">
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-label">Temperature</div>
+        <div class="stat-value" id="temp"></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">UV Index</div>
+        <div class="stat-value" id="uv"></div>
+        <div class="stat-sub" id="uv-label"></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Wind</div>
+        <div class="stat-value" id="wind"></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Conditions</div>
+        <div class="stat-value" style="font-size:15px; padding-top:4px;" id="conditions"></div>
+      </div>
+    </div>
+
+    <div id="verdict" class="verdict">
+      <div class="verdict-header">
+        <span class="verdict-emoji" id="verdict-emoji"></span>
+        <span class="verdict-title" id="verdict-title"></span>
+      </div>
+      <p class="verdict-reason" id="verdict-reason"></p>
+    </div>
+
+    <div class="uv-advice" id="uv-advice">
+      <div class="uv-advice-label">☀️ Sun protection</div>
+      <p class="uv-advice-text" id="uv-advice-text"></p>
+    </div>
+
+    <p class="updated" id="updated"></p>
+  </div>
+
+  <div id="error" class="error hidden">
+    <div class="error-icon">⚠️</div>
+    <p>Could not fetch weather data.<br>Check your connection and try again.</p>
+  </div>
+</div>
+
+<script>
+  const WMO = {
+    0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
+    45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
+    61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',
+    75:'Heavy snow',77:'Snow grains',80:'Rain showers',81:'Showers',
+    82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',
+    95:'Thunderstorm',96:'Thunderstorm + hail',99:'Thunderstorm + heavy hail'
+  };
+
+  const RAINY = [51,53,55,61,63,65,71,73,75,77,80,81,82,85,86,95,96,99];
+  const FOGGY = [45,48];
+
+  function uvLabel(uv) {
+    if (uv <= 2) return 'Low';
+    if (uv <= 5) return 'Moderate';
+    if (uv <= 7) return 'High';
+    if (uv <= 10) return 'Very High';
+    return 'Extreme';
+  }
+
+  function uvClass(uv) {
+    if (uv <= 2) return 'low';
+    if (uv <= 5) return 'moderate';
+    if (uv <= 7) return 'high';
+    if (uv <= 10) return 'veryhigh';
+    return 'extreme';
+  }
+
+  function uvAdvice(uv) {
+    if (uv <= 2) return 'No protection needed. Enjoy the sun freely.';
+    if (uv <= 5) return 'Wear SPF 30+ and a hat. Reapply every 2 hours.';
+    if (uv <= 7) return 'SPF 50+ required. Seek shade between 10am–4pm. Sunglasses a must.';
+    if (uv <= 10) return 'SPF 50+ and protective clothing essential. Limit direct sun exposure.';
+    return 'Extreme UV — minimize outdoor time. Full coverage and SPF 50+ mandatory.';
+  }
+
+  function verdict(tempC, uv, windKph, wmo) {
+    const tempF = Math.round((tempC * 9/5) + 32);
+    const windMph = Math.round(windKph * 0.621);
+    const cond = WMO[wmo] || 'Unknown';
+
+    if (RAINY.includes(wmo)) return { go: false, emoji: '🌧️', title: 'Stay home today', reason: `It's ${cond.toLowerCase()} right now — not a great beach day. Check back when it clears up.` };
+    if (FOGGY.includes(wmo)) return { go: false, emoji: '🌫️', title: 'Stay home today', reason: `Foggy at the coast right now. The beach will be socked in — wait for the marine layer to burn off.` };
+    if (tempF < 60) return { go: false, emoji: '🥶', title: 'Too cold today', reason: `It's only ${tempF}°F — too chilly for the beach. You'd need a wetsuit to swim comfortably.` };
+    if (windMph > 25) return { go: false, emoji: '💨', title: 'Too windy today', reason: `Winds at ${windMph} mph — expect blowing sand and choppy surf. Better to wait for calmer conditions.` };
+    if (uv >= 11) return { go: true, emoji: '🏖️', title: "Let's go — but protect yourself", reason: `${tempF}°F and ${cond.toLowerCase()}. Great beach conditions but UV is extreme (${uv}). SPF 50+, an umbrella, and stay in the shade when you can.` };
+    if (tempF >= 75 && windMph <= 15) return { go: true, emoji: '🏖️', title: "Let's go to the beach!", reason: `${tempF}°F, ${cond.toLowerCase()}, and light winds at ${windMph} mph — perfect beach day. UV is ${uvLabel(uv)} (${uv}), so pack your sunscreen.` };
+    if (tempF >= 65) return { go: true, emoji: '🌤️', title: "Worth the trip", reason: `${tempF}°F and ${cond.toLowerCase()} — decent beach weather. Winds at ${windMph} mph. UV is ${uvLabel(uv)} (${uv}). Not peak conditions but solid.` };
+    return { go: false, emoji: '😐', title: 'Not ideal today', reason: `Conditions aren't great — ${tempF}°F, ${cond.toLowerCase()}, winds at ${windMph} mph. Might be better to wait for a warmer day.` };
+  }
+
+  async function fetchWeather() {
+    document.getElementById('loading').classList.remove('hidden');
+    document.getElementById('content').classList.add('hidden');
+    document.getElementById('error').classList.add('hidden');
+
+    try {
+      const lat = 33.6846, lon = -117.8265;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m,uv_index&temperature_unit=celsius&windspeed_unit=kmh&timezone=America%2FLos_Angeles`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('bad response');
+      const data = await res.json();
+      const c = data.current;
+
+      const tempC = c.temperature_2m;
+      const tempF = Math.round((tempC * 9/5) + 32);
+      const uv = Math.round(c.uv_index);
+      const windKph = Math.round(c.windspeed_10m);
+      const windMph = Math.round(windKph * 0.621);
+      const wmo = c.weathercode;
+
+      document.getElementById('temp').textContent = `${tempF}°F`;
+      document.getElementById('uv').textContent = uv;
+      document.getElementById('uv-label').textContent = uvLabel(uv);
+      document.getElementById('wind').textContent = `${windMph} mph`;
+      document.getElementById('conditions').textContent = WMO[wmo] || 'Unknown';
+
+      const v = verdict(tempC, uv, windKph, wmo);
+      const verdictEl = document.getElementById('verdict');
+      verdictEl.className = `verdict ${v.go ? 'go' : 'nogo'}`;
+      document.getElementById('verdict-emoji').textContent = v.emoji;
+      document.getElementById('verdict-title').textContent = v.title;
+      document.getElementById('verdict-reason').textContent = v.reason;
+
+      const adviceEl = document.getElementById('uv-advice');
+      adviceEl.className = `uv-advice ${uvClass(uv)}`;
+      document.getElementById('uv-advice-text').textContent = uvAdvice(uv);
+
+      const now = new Date();
+      document.getElementById('updated').textContent = `Last updated ${now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'})}`;
+
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('content').classList.remove('hidden');
+
+    } catch(e) {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('error').classList.remove('hidden');
+    }
+  }
+
+  fetchWeather();
+</script>
+
+</body>
+</html>
