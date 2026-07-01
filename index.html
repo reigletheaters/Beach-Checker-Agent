@@ -1,580 +1,742 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Beach Day Checker</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tideline — Beach Day Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --abyss:#081826;
+    --abyss-2:#0b2236;
+    --panel:#0f2c44;
+    --panel-2:#123a56;
+    --line:rgba(120,170,200,0.16);
+    --line-soft:rgba(120,170,200,0.09);
+    --aqua:#4dd9c0;
+    --aqua-dim:#2a8c7e;
+    --amber:#f5b14c;
+    --coral:#ff7a6b;
+    --text:#ffffff;
+    --muted:#b8cdd9;
+    --muted-2:#8fa9ba;
+    --display:'Fraunces',Georgia,serif;
+    --sans:'Space Grotesk',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',monospace;
+  }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #0077b6 0%, #00b4d8 40%, #90e0ef 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
-    }
+  *{box-sizing:border-box;margin:0;padding:0;}
 
-    .card {
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(12px);
-      border-radius: 20px;
-      padding: 2rem;
-      max-width: 520px;
-      width: 100%;
-      box-shadow: 0 8px 40px rgba(0,0,80,0.18);
-    }
+  html,body{height:100%;}
 
-    h1 {
-      font-size: 22px;
-      font-weight: 700;
-      color: #0077b6;
-      margin-bottom: 4px;
-    }
+  body{
+    font-family:var(--sans);
+    color:var(--text);
+    background:var(--abyss);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px 18px;
+    position:relative;
+    overflow-x:hidden;
+  }
 
-    .subtitle {
-      font-size: 13px;
-      color: #888;
-      margin-bottom: 1.25rem;
-    }
+  /* ---- Ambient ocean horizon backdrop ---- */
+  .backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;background:
+      radial-gradient(120% 80% at 50% -10%, #103450 0%, var(--abyss-2) 45%, var(--abyss) 100%);}
+  .stars{position:absolute;inset:0;opacity:0.5;
+    background-image:
+      radial-gradient(1px 1px at 20% 18%, rgba(200,230,255,.7), transparent),
+      radial-gradient(1px 1px at 68% 12%, rgba(200,230,255,.5), transparent),
+      radial-gradient(1px 1px at 85% 30%, rgba(200,230,255,.6), transparent),
+      radial-gradient(1px 1px at 40% 8%, rgba(200,230,255,.4), transparent),
+      radial-gradient(1px 1px at 12% 34%, rgba(200,230,255,.4), transparent);}
+  .swell{position:absolute;left:-10%;right:-10%;bottom:0;height:42vh;}
+  .swell svg{width:120%;height:100%;display:block;}
+  .swell .layerA{animation:drift 14s ease-in-out infinite;}
+  .swell .layerB{animation:drift 19s ease-in-out infinite reverse;}
+  .swell .layerC{animation:drift 26s ease-in-out infinite;}
+  @keyframes drift{0%,100%{transform:translateX(0);}50%{transform:translateX(-3%);}}
 
-    .search-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-      position: relative;
-    }
+  @media(prefers-reduced-motion:reduce){
+    .swell .layerA,.swell .layerB,.swell .layerC{animation:none;}
+  }
 
-    .search-input {
-      flex: 1;
-      padding: 10px 14px;
-      border: 1.5px solid #d1d5db;
-      border-radius: 10px;
-      font-size: 14px;
-      outline: none;
-      transition: border 0.15s;
-    }
+  /* ---- Shell ---- */
+  .shell{position:relative;z-index:2;width:100%;max-width:560px;}
 
-    .search-input:focus { border-color: #0077b6; }
-    .search-input.error { border-color: #ef4444; }
+  .masthead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;padding:0 4px;}
+  .wordmark{font-family:var(--display);font-weight:500;font-size:30px;letter-spacing:-0.01em;line-height:1;}
+  .wordmark .dot{color:var(--aqua);}
+  .coords{font-family:var(--mono);font-size:11px;color:var(--muted-2);text-align:right;line-height:1.5;}
 
-    .search-btn {
-      background: #0077b6;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 18px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
+  .panel{
+    background:linear-gradient(180deg, rgba(18,52,78,0.92), rgba(11,34,54,0.92));
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 24px 70px -30px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.04);
+    backdrop-filter:blur(10px);
+  }
 
-    .search-btn:hover { background: #005f8e; }
+  /* ---- Search ---- */
+  .finder{position:relative;}
+  .field{display:flex;gap:8px;}
+  .input-wrap{position:relative;flex:1;}
+  .search-input{
+    width:100%;
+    background:var(--abyss-2);
+    border:1px solid var(--line);
+    border-radius:11px;
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:15px;
+    padding:13px 14px 13px 40px;
+    outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .search-input::placeholder{color:var(--muted-2);}
+  .search-input:focus{border-color:var(--aqua-dim);box-shadow:0 0 0 3px rgba(77,217,192,0.12);}
+  .search-input.error{border-color:var(--coral);box-shadow:0 0 0 3px rgba(255,122,107,0.12);}
+  .pin-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;opacity:.6;pointer-events:none;}
 
-    .error-msg {
-      font-size: 12px;
-      color: #ef4444;
-      margin-bottom: 8px;
-      min-height: 16px;
-    }
+  .go-btn{
+    background:var(--aqua);color:#062018;border:none;border-radius:11px;
+    font-family:var(--sans);font-weight:600;font-size:14px;padding:0 20px;cursor:pointer;
+    transition:transform .1s, background .15s;
+  }
+  .go-btn:hover{background:#62e6cf;}
+  .go-btn:active{transform:scale(0.97);}
 
-    .dropdown-label {
-      font-size: 12px;
-      color: #888;
-      margin-bottom: 6px;
-    }
+  /* ---- Autocomplete dropdown ---- */
+  .suggestions{
+    position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:30;
+    background:#0c2436;border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;box-shadow:0 20px 50px -16px rgba(0,0,0,0.7);
+    display:none;
+  }
+  .suggestions.open{display:block;}
+  .sugg-item{
+    padding:11px 14px;font-size:14px;color:var(--text);cursor:pointer;
+    display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line-soft);
+    transition:background .1s;
+  }
+  .sugg-item:last-child{border-bottom:none;}
+  .sugg-item:hover,.sugg-item.active{background:rgba(77,217,192,0.1);}
+  .sugg-item .mini-pin{width:13px;height:13px;opacity:.5;flex-shrink:0;}
+  .sugg-item .s-main{font-weight:500;}
+  .sugg-item .s-sub{color:var(--muted-2);font-size:12px;}
+  .sugg-loading{padding:11px 14px;font-size:13px;color:var(--muted-2);font-family:var(--mono);}
 
-    .beach-select {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1.5px solid #d1d5db;
-      border-radius: 10px;
-      font-size: 14px;
-      color: #333;
-      background: white;
-      cursor: pointer;
-      outline: none;
-      margin-bottom: 1.25rem;
-      transition: border 0.15s;
-    }
+  .helper{display:flex;align-items:center;justify-content:space-between;margin-top:10px;min-height:18px;}
+  .error-msg{font-size:12.5px;color:var(--coral);font-family:var(--sans);}
+  .quick{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{
+    background:transparent;border:1px solid var(--line);color:var(--text);
+    font-family:var(--sans);font-size:12px;padding:5px 11px;border-radius:20px;cursor:pointer;
+    transition:all .14s;
+  }
+  .chip:hover{border-color:var(--aqua-dim);color:var(--aqua);}
 
-    .beach-select:focus { border-color: #0077b6; }
+  .divider{height:1px;background:var(--line-soft);margin:20px 0;}
 
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 1.25rem;
-    }
+  /* ---- States ---- */
+  .hidden{display:none !important;}
 
-    .stat {
-      background: #f0f9ff;
-      border-radius: 10px;
-      padding: 12px 14px;
-    }
+  .loading{text-align:center;padding:34px 0;color:var(--muted);}
+  .pulse-ring{width:30px;height:30px;margin:0 auto 14px;border-radius:50%;
+    border:2px solid var(--line);border-top-color:var(--aqua);animation:spin .9s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading p{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--muted-2);}
 
-    .stat-label {
-      font-size: 11px;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 4px;
-    }
+  /* ---- Too-far state ---- */
+  .toofar{text-align:center;padding:30px 18px;}
+  .toofar .glyph{font-size:34px;margin-bottom:12px;display:block;}
+  .toofar h3{font-family:var(--display);font-weight:500;font-size:21px;margin-bottom:8px;}
+  .toofar p{font-size:13.5px;color:var(--muted);line-height:1.6;max-width:360px;margin:0 auto;}
+  .toofar .dist{color:var(--aqua);font-family:var(--mono);}
 
-    .stat-value {
-      font-size: 20px;
-      font-weight: 700;
-      color: #1a1a1a;
-    }
+  .fail{text-align:center;padding:30px 0;color:var(--coral);font-size:14px;}
 
-    .stat-sub {
-      font-size: 11px;
-      color: #888;
-      margin-top: 2px;
-    }
+  /* ---- Readout ---- */
+  .place-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;}
+  .place-name{font-family:var(--display);font-weight:500;font-size:23px;letter-spacing:-0.01em;line-height:1.1;}
+  .place-dist{font-family:var(--mono);font-size:11px;color:var(--muted-2);white-space:nowrap;margin-left:12px;}
 
-    .verdict {
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-    }
+  /* Verdict banner */
+  .verdict{border-radius:14px;padding:18px;margin-bottom:18px;position:relative;overflow:hidden;border:1px solid;}
+  .verdict::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;}
+  .verdict.go{background:rgba(77,217,192,0.07);border-color:rgba(77,217,192,0.3);}
+  .verdict.go::before{background:var(--aqua);}
+  .verdict.warn{background:rgba(245,177,76,0.07);border-color:rgba(245,177,76,0.3);}
+  .verdict.warn::before{background:var(--amber);}
+  .verdict.nogo{background:rgba(255,122,107,0.07);border-color:rgba(255,122,107,0.3);}
+  .verdict.nogo::before{background:var(--coral);}
+  .v-top{display:flex;align-items:center;gap:11px;margin-bottom:7px;}
+  .v-emoji{font-size:24px;line-height:1;}
+  .v-title{font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:-0.01em;}
+  .verdict.go .v-title{color:var(--aqua);}
+  .verdict.warn .v-title{color:var(--amber);}
+  .verdict.nogo .v-title{color:var(--coral);}
+  .v-reason{font-size:13.5px;line-height:1.6;color:#ffffff;}
 
-    .verdict.go { background: #ecfdf5; border: 1.5px solid #6ee7b7; }
-    .verdict.nogo { background: #fff1f2; border: 1.5px solid #fca5a5; }
-    .verdict.warn { background: #fffbeb; border: 1.5px solid #fcd34d; }
+  /* Stat grid */
+  .readout{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-soft);
+    border:1px solid var(--line-soft);border-radius:13px;overflow:hidden;margin-bottom:18px;}
+  .cell{background:var(--abyss-2);padding:14px 12px;position:relative;}
+  .cell-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2);margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+  .cell-value{font-family:var(--display);font-weight:500;font-size:26px;line-height:1;letter-spacing:-0.02em;}
+  .cell-value small{font-size:14px;color:var(--muted);font-family:var(--sans);font-weight:400;}
+  .cell-sub{font-size:11px;color:var(--muted);margin-top:5px;font-family:var(--sans);}
+  @media(max-width:520px){
+    .readout{grid-template-columns:repeat(2,1fr);}
+  }
 
-    .verdict-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
+  /* Info icon + legend popover */
+  .info-btn{
+    width:14px;height:14px;border-radius:50%;border:1px solid var(--muted-2);
+    color:var(--muted-2);background:transparent;cursor:pointer;flex-shrink:0;
+    font-family:var(--sans);font-size:9px;font-weight:700;line-height:1;
+    display:inline-flex;align-items:center;justify-content:center;padding:0;
+    transition:border-color .14s,color .14s;
+  }
+  .info-btn:hover{border-color:var(--aqua);color:var(--aqua);}
+  .legend-backdrop{
+    position:fixed;inset:0;z-index:50;background:rgba(4,12,20,0.55);
+    display:none;align-items:center;justify-content:center;padding:24px;
+    backdrop-filter:blur(2px);
+  }
+  .legend-backdrop.open{display:flex;}
+  .legend{
+    position:relative;background:#0c2436;border:1px solid var(--line);
+    border-radius:14px;padding:18px 20px;box-shadow:0 30px 70px -20px rgba(0,0,0,0.8);
+    width:280px;max-width:100%;
+  }
+  .legend-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted-2);margin-bottom:12px;}
+  .legend-row{display:flex;align-items:center;gap:11px;padding:6px 0;font-size:13px;}
+  .legend-row .swatch{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .legend-row .lr-name{font-weight:600;color:var(--text);min-width:78px;}
+  .legend-row .lr-range{color:var(--muted);font-family:var(--mono);font-size:12px;}
+  .legend-close{position:absolute;top:12px;right:14px;color:var(--muted-2);cursor:pointer;
+    font-size:20px;line-height:1;background:none;border:none;padding:2px;}
+  .legend-close:hover{color:var(--text);}
 
-    .verdict-emoji { font-size: 26px; }
+  .uv-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+  .uv-low{background:var(--aqua);}
+  .uv-moderate{background:var(--amber);}
+  .uv-high{background:#fb923c;}
+  .uv-veryhigh{background:var(--coral);}
+  .uv-extreme{background:#c084fc;}
 
-    .verdict-title {
-      font-size: 17px;
-      font-weight: 700;
-    }
+  /* Section label */
+  .sec{display:flex;align-items:center;gap:10px;margin:22px 0 12px;}
+  .sec-num{font-family:var(--mono);font-size:11px;color:var(--aqua-dim);}
+  .sec-title{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .sec-line{flex:1;height:1px;background:var(--line-soft);}
 
-    .verdict.go .verdict-title { color: #065f46; }
-    .verdict.nogo .verdict-title { color: #991b1b; }
-    .verdict.warn .verdict-title { color: #92400e; }
+  /* Surf */
+  .surf{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);
+    border:1px solid var(--line-soft);border-radius:13px;overflow:hidden;}
+  .surf .cell-value{font-size:21px;color:var(--aqua);}
 
-    .verdict-reason {
-      font-size: 13px;
-      line-height: 1.6;
-      color: #444;
-    }
+  /* Hourly */
+  .hourly{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin;scrollbar-color:var(--aqua-dim) transparent;}
+  .hourly::-webkit-scrollbar{height:6px;}
+  .hourly::-webkit-scrollbar-thumb{background:var(--aqua-dim);border-radius:3px;}
+  .hour{flex-shrink:0;min-width:66px;background:var(--abyss-2);border:1px solid var(--line-soft);
+    border-radius:11px;padding:11px 8px;text-align:center;}
+  .hour.best{border-color:rgba(77,217,192,0.4);background:rgba(77,217,192,0.06);}
+  .hour.bad{opacity:.45;}
+  .h-time{font-family:var(--mono);font-size:10px;color:var(--muted-2);margin-bottom:6px;}
+  .h-icon{font-size:17px;margin-bottom:4px;}
+  .h-temp{font-family:var(--display);font-weight:500;font-size:16px;}
+  .h-uv{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:3px;}
 
-    .hourly-section {
-      margin-bottom: 1rem;
-    }
+  /* UV advice */
+  .advice{margin-top:18px;border-left:3px solid var(--line);background:rgba(8,24,38,0.6);
+    border-radius:0 10px 10px 0;padding:13px 16px;font-size:13px;color:#ffffff;line-height:1.55;}
+  .advice.low{border-left-color:var(--aqua);}
+  .advice.moderate{border-left-color:var(--amber);}
+  .advice.high{border-left-color:#fb923c;}
+  .advice.veryhigh{border-left-color:var(--coral);}
+  .advice.extreme{border-left-color:#c084fc;}
 
-    .section-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #555;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 8px;
-    }
+  /* Cams link */
+  .cams{margin-top:14px;}
+  .cams a{display:inline-flex;align-items:center;gap:8px;font-family:var(--sans);font-size:13px;
+    font-weight:500;color:var(--aqua);text-decoration:none;border:1px solid var(--line);
+    padding:10px 16px;border-radius:11px;transition:all .15s;}
+  .cams a:hover{border-color:var(--aqua-dim);background:rgba(77,217,192,0.06);}
 
-    .hourly-scroll {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 6px;
-      scrollbar-width: thin;
-    }
+  .stamp{font-family:var(--mono);font-size:10.5px;color:var(--muted-2);text-align:right;margin-top:16px;letter-spacing:.03em;}
 
-    .hour-card {
-      flex-shrink: 0;
-      background: #f0f9ff;
-      border-radius: 10px;
-      padding: 10px 12px;
-      text-align: center;
-      min-width: 70px;
-    }
-
-    .hour-card.best { background: #ecfdf5; border: 1.5px solid #6ee7b7; }
-    .hour-card.bad { background: #fff1f2; border: 1.5px solid #fca5a5; opacity: 0.7; }
-
-    .hour-time { font-size: 11px; color: #888; margin-bottom: 4px; }
-    .hour-temp { font-size: 14px; font-weight: 700; color: #1a1a1a; }
-    .hour-uv { font-size: 11px; color: #555; margin-top: 2px; }
-    .hour-icon { font-size: 16px; margin-bottom: 2px; }
-
-    .surf-section {
-      background: #f0f9ff;
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 1rem;
-    }
-
-    .surf-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .surf-item { text-align: center; }
-    .surf-item-label { font-size: 11px; color: #888; margin-bottom: 2px; }
-    .surf-item-value { font-size: 15px; font-weight: 700; color: #0077b6; }
-
-    .uv-advice {
-      background: #f8f9fa;
-      border-left: 3px solid #d1d5db;
-      border-radius: 0 8px 8px 0;
-      padding: 10px 14px;
-      margin-bottom: 1rem;
-      font-size: 13px;
-      color: #555;
-      line-height: 1.5;
-    }
-
-    .uv-advice.low { border-left-color: #6ee7b7; }
-    .uv-advice.moderate { border-left-color: #fcd34d; }
-    .uv-advice.high { border-left-color: #fb923c; }
-    .uv-advice.veryhigh { border-left-color: #f87171; }
-    .uv-advice.extreme { border-left-color: #c084fc; }
-
-    .updated {
-      font-size: 11px;
-      color: #bbb;
-      text-align: right;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 2rem 0;
-      color: #aaa;
-      font-size: 14px;
-    }
-
-    .error-state {
-      text-align: center;
-      padding: 2rem 0;
-      color: #e53e3e;
-      font-size: 14px;
-    }
-
-    .hidden { display: none; }
-
-    @keyframes wave {
-      0%,100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
-
-    .wave-icon {
-      font-size: 36px;
-      display: inline-block;
-      animation: wave 1.5s ease-in-out infinite;
-    }
-  </style>
+  .footnote{text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted-2);margin-top:18px;letter-spacing:.04em;}
+</style>
 </head>
 <body>
 
-<div class="card">
-  <h1>🏄 Beach Day Checker</h1>
-  <p class="subtitle">Real-time weather, UV, surf & hourly forecast</p>
-
-  <div class="search-row">
-    <input type="text" class="search-input" id="searchInput" placeholder="Search a city or beach (e.g. Malibu)" />
-    <button class="search-btn" onclick="searchLocation()">Go</button>
+<div class="backdrop">
+  <div class="stars"></div>
+  <div class="swell">
+    <svg viewBox="0 0 1200 400" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path class="layerC" fill="rgba(20,70,100,0.5)" d="M0,180 C200,120 400,240 600,180 C800,120 1000,240 1200,180 L1200,400 L0,400 Z"/>
+      <path class="layerB" fill="rgba(28,95,130,0.5)" d="M0,240 C220,180 420,300 620,240 C820,180 1020,300 1200,240 L1200,400 L0,400 Z"/>
+      <path class="layerA" fill="rgba(40,130,160,0.45)" d="M0,300 C240,250 440,350 640,300 C840,250 1040,350 1200,300 L1200,400 L0,400 Z"/>
+    </svg>
   </div>
-  <div class="error-msg" id="searchError"></div>
+</div>
 
-  <p class="dropdown-label">Or pick a popular SoCal beach:</p>
-  <select class="beach-select" id="beachSelect" onchange="selectBeach()">
-    <option value="">— Select a beach —</option>
-    <option value="33.6595,-117.9988">Huntington Beach, CA</option>
-    <option value="33.6189,-117.9289">Newport Beach, CA</option>
-    <option value="33.5427,-117.7854">Laguna Beach, CA</option>
-    <option value="33.8565,-118.4046">Manhattan Beach, CA</option>
-    <option value="34.0195,-118.4912">Santa Monica, CA</option>
-    <option value="33.4600,-117.6614">San Clemente, CA</option>
-    <option value="33.7455,-118.1143">Long Beach, CA</option>
-    <option value="33.6846,-117.8265">Irvine, CA (inland)</option>
-  </select>
-
-  <div id="loading" class="loading hidden">
-    <span class="wave-icon">🌊</span>
-    <p style="margin-top:12px;">Fetching live data...</p>
+<main class="shell">
+  <div class="masthead">
+    <div class="wordmark">Tideline<span class="dot">.</span></div>
+    <div class="coords" id="coords">— · —<br>PACIFIC STANDARD</div>
   </div>
 
-  <div id="content" class="hidden">
-
-    <div class="stats-grid">
-      <div class="stat">
-        <div class="stat-label">Temperature</div>
-        <div class="stat-value" id="temp"></div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">UV Index</div>
-        <div class="stat-value" id="uv"></div>
-        <div class="stat-sub" id="uvLabel"></div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Wind</div>
-        <div class="stat-value" id="wind"></div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Conditions</div>
-        <div class="stat-value" style="font-size:14px;padding-top:4px;" id="conditions"></div>
-      </div>
-    </div>
-
-    <div id="verdict" class="verdict">
-      <div class="verdict-header">
-        <span class="verdict-emoji" id="verdictEmoji"></span>
-        <span class="verdict-title" id="verdictTitle"></span>
-      </div>
-      <p class="verdict-reason" id="verdictReason"></p>
-    </div>
-
-    <div class="surf-section">
-      <div class="section-title">🌊 Surf Report</div>
-      <div class="surf-grid">
-        <div class="surf-item">
-          <div class="surf-item-label">Wave Height</div>
-          <div class="surf-item-value" id="waveHeight">—</div>
+  <div class="panel">
+    <!-- Finder -->
+    <div class="finder">
+      <div class="field">
+        <div class="input-wrap">
+          <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          <input type="text" class="search-input" id="searchInput" autocomplete="off"
+                 placeholder="Search a beach or town…" />
         </div>
-        <div class="surf-item">
-          <div class="surf-item-label">Wave Period</div>
-          <div class="surf-item-value" id="wavePeriod">—</div>
-        </div>
-        <div class="surf-item">
-          <div class="surf-item-label">Surf Rating</div>
-          <div class="surf-item-value" id="surfRating">—</div>
-        </div>
+        <button class="go-btn" id="goBtn">Check</button>
+      </div>
+      <div class="suggestions" id="suggestions"></div>
+      <div class="helper">
+        <span class="error-msg" id="searchError"></span>
+        <div class="quick" id="quickChips"></div>
       </div>
     </div>
 
-    <div class="hourly-section">
-      <div class="section-title">⏰ Best time to go today</div>
-      <div class="hourly-scroll" id="hourlyScroll"></div>
+    <div class="divider"></div>
+
+    <!-- Loading -->
+    <div id="loading" class="loading hidden">
+      <div class="pulse-ring"></div>
+      <p id="loadingText">READING CONDITIONS…</p>
     </div>
 
-    <div class="uv-advice" id="uvAdvice"></div>
-    <p class="updated" id="updated"></p>
+    <!-- Too far inland -->
+    <div id="toofar" class="toofar hidden">
+      <span class="glyph">🏜️</span>
+      <h3 id="toofarTitle">That's a long drive to the sand</h3>
+      <p id="toofarBody"></p>
+    </div>
+
+    <!-- Fetch failure -->
+    <div id="failState" class="fail hidden">
+      Couldn't reach the weather service. Check your connection and try again.
+    </div>
+
+    <!-- Readout -->
+    <div id="content" class="hidden">
+      <div class="place-head">
+        <div class="place-name" id="placeName">—</div>
+        <div class="place-dist" id="placeDist"></div>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <div class="v-top">
+          <span class="v-emoji" id="vEmoji"></span>
+          <span class="v-title" id="vTitle"></span>
+        </div>
+        <p class="v-reason" id="vReason"></p>
+      </div>
+
+      <div class="readout">
+        <div class="cell">
+          <div class="cell-label">Air</div>
+          <div class="cell-value" id="temp">—</div>
+        </div>
+        <div class="cell">
+          <div class="cell-label">UV Index <button class="info-btn" id="uvInfoBtn" aria-label="UV index scale">i</button></div>
+          <div class="cell-value" id="uv">—</div>
+          <div class="cell-sub" id="uvLabel"></div>
+        </div>
+        <div class="cell">
+          <div class="cell-label">Wind</div>
+          <div class="cell-value" id="wind">—</div>
+        </div>
+        <div class="cell">
+          <div class="cell-label">Sky</div>
+          <div class="cell-value" id="conditions" style="font-size:15px;line-height:1.2;padding-top:5px;font-family:var(--sans);">—</div>
+        </div>
+      </div>
+
+      <div class="sec"><span class="sec-num">01</span><span class="sec-title">Surf Report</span><span class="sec-line"></span></div>
+      <div class="surf">
+        <div class="cell"><div class="cell-label">Wave Height</div><div class="cell-value" id="waveHeight">—</div></div>
+        <div class="cell"><div class="cell-label">Period</div><div class="cell-value" id="wavePeriod">—</div></div>
+        <div class="cell"><div class="cell-label">Rating <button class="info-btn" id="surfInfoBtn" aria-label="Surf height scale">i</button></div><div class="cell-value" id="surfRating">—</div></div>
+      </div>
+
+      <div class="sec"><span class="sec-num">02</span><span class="sec-title">Best Window Today</span><span class="sec-line"></span></div>
+      <div class="hourly" id="hourly"></div>
+
+      <div class="advice" id="advice"></div>
+
+      <div class="cams" id="camsWrap"></div>
+
+      <div class="stamp" id="stamp"></div>
+    </div>
   </div>
 
-  <div id="errorState" class="error-state hidden">
-    <p>⚠️ Could not fetch data. Check your connection and try again.</p>
+  <div class="footnote">Live data · Open-Meteo · Surf within 50 mi of the Pacific</div>
+</main>
+
+<!-- Legend modals -->
+<div class="legend-backdrop" id="uvBackdrop">
+  <div class="legend">
+    <button class="legend-close" data-close="uvBackdrop">×</button>
+    <div class="legend-title">UV Index Scale</div>
+    <div class="legend-row"><span class="swatch" style="background:var(--aqua)"></span><span class="lr-name">Low</span><span class="lr-range">0–2</span></div>
+    <div class="legend-row"><span class="swatch" style="background:var(--amber)"></span><span class="lr-name">Moderate</span><span class="lr-range">3–5</span></div>
+    <div class="legend-row"><span class="swatch" style="background:#fb923c"></span><span class="lr-name">High</span><span class="lr-range">6–7</span></div>
+    <div class="legend-row"><span class="swatch" style="background:var(--coral)"></span><span class="lr-name">Very High</span><span class="lr-range">8–10</span></div>
+    <div class="legend-row"><span class="swatch" style="background:#c084fc"></span><span class="lr-name">Extreme</span><span class="lr-range">11+</span></div>
+  </div>
+</div>
+
+<div class="legend-backdrop" id="surfBackdrop">
+  <div class="legend">
+    <button class="legend-close" data-close="surfBackdrop">×</button>
+    <div class="legend-title">Wave Height Scale</div>
+    <div class="legend-row"><span class="lr-name">Flat</span><span class="lr-range">under 1 ft</span></div>
+    <div class="legend-row"><span class="lr-name">Small</span><span class="lr-range">1–2 ft</span></div>
+    <div class="legend-row"><span class="lr-name">Fun</span><span class="lr-range">2–3 ft</span></div>
+    <div class="legend-row"><span class="lr-name">Good</span><span class="lr-range">3–5 ft</span></div>
+    <div class="legend-row"><span class="lr-name">Pumping</span><span class="lr-range">5–6.5 ft</span></div>
+    <div class="legend-row"><span class="lr-name">Huge</span><span class="lr-range">6.5 ft+</span></div>
   </div>
 </div>
 
 <script>
-const WMO = {
-  0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
-  45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
-  61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',
-  75:'Heavy snow',77:'Snow grains',80:'Rain showers',81:'Showers',82:'Heavy showers',
-  85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Thunderstorm + heavy hail'
-};
+/* ============ Weather code maps ============ */
+const WMO={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Rain showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Storm + hail',99:'Storm + heavy hail'};
+const WMO_ICON={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'🌨️',77:'🌨️',80:'🌦️',81:'🌧️',82:'🌧️',95:'⛈️',96:'⛈️',99:'⛈️'};
+const RAINY=[51,53,55,61,63,65,71,73,75,77,80,81,82,85,86,95,96,99];
+const FOGGY=[45,48];
 
-const WMO_ICON = {
-  0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',
-  51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',
-  71:'🌨️',73:'🌨️',75:'🌨️',77:'🌨️',80:'🌦️',81:'🌧️',82:'🌧️',
-  95:'⛈️',96:'⛈️',99:'⛈️'
-};
+/* ============ Pacific coastline reference points (CA + Baja edge + Oregon edge) ============
+   Used to measure how far an inland search is from real ocean surf. Spaced so a 50-mi
+   threshold reads accurately along the SoCal/Central coast. */
+const COAST=[
+  [32.53,-117.12],[32.66,-117.24],[32.85,-117.27],[33.00,-117.28],[33.18,-117.38],
+  [33.39,-117.59],[33.46,-117.66],[33.54,-117.79],[33.59,-117.88],[33.62,-117.93],
+  [33.66,-118.00],[33.72,-118.07],[33.74,-118.11],[33.77,-118.19],[33.86,-118.40],
+  [33.98,-118.47],[34.02,-118.49],[34.04,-118.55],[34.10,-118.70],[34.03,-118.83],
+  [34.05,-119.00],[34.14,-119.23],[34.27,-119.29],[34.40,-119.52],[34.42,-119.69],
+  [34.41,-119.87],[34.46,-120.05],[34.52,-120.22],[34.54,-120.50],[34.71,-120.60],
+  [34.90,-120.64],[35.13,-120.63],[35.37,-120.85],[35.61,-121.12],[35.89,-121.43],
+  [36.27,-121.81],[36.52,-121.94],[36.62,-121.90],[36.80,-121.79],[36.97,-122.02],
+  [37.11,-122.27],[37.41,-122.43],[37.50,-122.50],[37.60,-122.49],[37.75,-122.51],
+  [37.81,-122.48]
+];
 
-const RAINY = [51,53,55,61,63,65,71,73,75,77,80,81,82,85,86,95,96,99];
-const FOGGY = [45,48];
+/* ============ Quick-pick beaches ============ */
+const QUICK=[
+  {n:'Newport Beach',lat:33.6189,lon:-117.9289},
+  {n:'Huntington',lat:33.6595,lon:-117.9988},
+  {n:'Laguna',lat:33.5427,lon:-117.7854},
+  {n:'Santa Monica',lat:34.0195,lon:-118.4912}
+];
 
-let currentLat = null, currentLon = null, currentName = 'Unknown';
+let curLat=null,curLon=null,curName='',curDist=0;
 
-function uvLabel(uv) {
-  if (uv<=2) return 'Low';
-  if (uv<=5) return 'Moderate';
-  if (uv<=7) return 'High';
-  if (uv<=10) return 'Very High';
-  return 'Extreme';
+/* ============ Geo helpers ============ */
+function haversine(la1,lo1,la2,lo2){
+  const R=3958.8,toR=x=>x*Math.PI/180;
+  const dLa=toR(la2-la1),dLo=toR(lo2-lo1);
+  const a=Math.sin(dLa/2)**2+Math.cos(toR(la1))*Math.cos(toR(la2))*Math.sin(dLo/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function coastDistance(lat,lon){
+  let min=Infinity;
+  for(const [cla,clo] of COAST){
+    const d=haversine(lat,lon,cla,clo);
+    if(d<min)min=d;
+  }
+  return min;
 }
 
-function uvClass(uv) {
-  if (uv<=2) return 'low';
-  if (uv<=5) return 'moderate';
-  if (uv<=7) return 'high';
-  if (uv<=10) return 'veryhigh';
-  return 'extreme';
+/* ============ UV + surf logic ============ */
+function uvLabel(uv){if(uv<=2)return'Low';if(uv<=5)return'Moderate';if(uv<=7)return'High';if(uv<=10)return'Very High';return'Extreme';}
+function uvClass(uv){if(uv<=2)return'low';if(uv<=5)return'moderate';if(uv<=7)return'high';if(uv<=10)return'veryhigh';return'extreme';}
+function uvAdvice(uv){
+  if(uv<=2)return'☀️ Minimal UV. No protection needed — enjoy the sun.';
+  if(uv<=5)return'🧴 Wear SPF 30+ and a hat. Reapply every two hours.';
+  if(uv<=7)return'🧴 SPF 50+ recommended. Seek shade between 10am and 4pm; bring sunglasses.';
+  if(uv<=10)return'⚠️ SPF 50+ and cover up. Limit direct exposure during midday.';
+  return'🚨 Extreme UV. Minimize outdoor time; full coverage and SPF 50+ are essential.';
+}
+function surfRating(m){if(m<0.3)return'Flat';if(m<0.6)return'Small';if(m<1.0)return'Fun';if(m<1.5)return'Good';if(m<2.0)return'Pumping';return'Huge';}
+
+function getVerdict(tempC,uv,windKph,wmo){
+  const tF=Math.round(tempC*9/5+32),wMph=Math.round(windKph*0.621),cond=(WMO[wmo]||'unknown').toLowerCase();
+  if(RAINY.includes(wmo))return{cls:'nogo',emoji:'🌧️',title:'Not today',reason:`It's ${cond} at the coast right now. Give it time to clear and check back.`};
+  if(FOGGY.includes(wmo))return{cls:'nogo',emoji:'🌫️',title:'Socked in',reason:`Marine layer is sitting on the beach. Wait for the fog to burn off, usually by midday.`};
+  if(tF<60)return{cls:'nogo',emoji:'🥶',title:'Too cold',reason:`Only ${tF}°F — chilly for the sand without a wetsuit. Better on a warmer day.`};
+  if(wMph>25)return{cls:'nogo',emoji:'💨',title:'Too windy',reason:`Winds at ${wMph} mph mean blowing sand and choppy surf. Hold out for calmer air.`};
+  if(uv>=11)return{cls:'warn',emoji:'☀️',title:'Go — but cover up',reason:`${tF}°F and ${cond}. Good beach conditions, but UV is extreme (${uv}). SPF 50+, umbrella, shade when you can.`};
+  if(tF>=75&&wMph<=15)return{cls:'go',emoji:'🏖️',title:'Beach day',reason:`${tF}°F, ${cond}, light winds at ${wMph} mph — a near-perfect window. UV is ${uvLabel(uv).toLowerCase()} (${uv}). Pack the sunscreen.`};
+  if(tF>=65)return{cls:'go',emoji:'🌤️',title:'Worth the trip',reason:`${tF}°F and ${cond} — solid conditions. Winds at ${wMph} mph, UV ${uvLabel(uv).toLowerCase()} (${uv}).`};
+  return{cls:'nogo',emoji:'😐',title:'Marginal',reason:`${tF}°F, ${cond}, winds ${wMph} mph. Doable, but a warmer day would be better.`};
 }
 
-function uvAdvice(uv) {
-  if (uv<=2) return '☀️ No protection needed. Enjoy the sun freely.';
-  if (uv<=5) return '🧴 Wear SPF 30+ and a hat. Reapply every 2 hours.';
-  if (uv<=7) return '🧴 SPF 50+ required. Seek shade between 10am–4pm. Sunglasses a must.';
-  if (uv<=10) return '⚠️ SPF 50+ and protective clothing essential. Limit direct sun exposure.';
-  return '🚨 Extreme UV — minimize outdoor time. Full coverage and SPF 50+ mandatory.';
-}
+/* ============ DOM helpers ============ */
+const $=id=>document.getElementById(id);
+function show(id){$(id).classList.remove('hidden');}
+function hide(id){$(id).classList.add('hidden');}
+function onlyShow(id){['loading','toofar','failState','content'].forEach(x=>hide(x));show(id);}
 
-function surfRating(waveM) {
-  if (waveM < 0.3) return 'Flat';
-  if (waveM < 0.6) return 'Small';
-  if (waveM < 1.0) return 'Fun';
-  if (waveM < 1.5) return 'Good';
-  if (waveM < 2.0) return 'Pumping';
-  return 'Huge';
-}
+/* ============ Main fetch ============ */
+async function loadLocation(lat,lon,name){
+  curLat=lat;curLon=lon;curName=name;
+  closeSuggestions();
+  $('searchError').textContent='';
+  $('searchInput').classList.remove('error');
+  $('coords').innerHTML=`${lat.toFixed(2)}° · ${lon.toFixed(2)}°<br>PACIFIC STANDARD`;
 
-function getVerdict(tempC, uv, windKph, wmo, waveM) {
-  const tempF = Math.round((tempC*9/5)+32);
-  const windMph = Math.round(windKph*0.621);
-  const cond = WMO[wmo] || 'Unknown';
-  if (RAINY.includes(wmo)) return { cls:'nogo', emoji:'🌧️', title:'Stay home today', reason:`It's ${cond.toLowerCase()} right now — not a beach day. Check back when it clears up.` };
-  if (FOGGY.includes(wmo)) return { cls:'nogo', emoji:'🌫️', title:'Too foggy', reason:`The beach will be socked in with fog. Wait for the marine layer to burn off.` };
-  if (tempF < 60) return { cls:'nogo', emoji:'🥶', title:'Too cold', reason:`It's only ${tempF}°F — too chilly for the beach without a wetsuit.` };
-  if (windMph > 25) return { cls:'nogo', emoji:'💨', title:'Too windy', reason:`Winds at ${windMph} mph — expect blowing sand and choppy surf. Wait for calmer conditions.` };
-  if (uv >= 11) return { cls:'warn', emoji:'☀️', title:"Go, but protect yourself", reason:`${tempF}°F and ${cond.toLowerCase()}. Good beach conditions but UV is extreme (${uv}). SPF 50+, umbrella, stay in shade when you can.` };
-  if (tempF >= 75 && windMph <= 15) return { cls:'go', emoji:'🏖️', title:"Let's go to the beach!", reason:`${tempF}°F, ${cond.toLowerCase()}, light winds at ${windMph} mph — perfect beach day. UV is ${uvLabel(uv)} (${uv}). Pack your sunscreen.` };
-  if (tempF >= 65) return { cls:'go', emoji:'🌤️', title:"Worth the trip", reason:`${tempF}°F and ${cond.toLowerCase()} — solid beach weather. Winds at ${windMph} mph. UV is ${uvLabel(uv)} (${uv}).` };
-  return { cls:'nogo', emoji:'😐', title:'Not ideal today', reason:`Conditions aren't great — ${tempF}°F, ${cond.toLowerCase()}, winds at ${windMph} mph. Might be better to wait for a warmer day.` };
-}
+  // Distance-to-coast gate
+  const dist=Math.round(coastDistance(lat,lon));
+  curDist=dist;
+  if(dist>50){
+    onlyShow('toofar');
+    $('toofarTitle').textContent='Too far from the surf';
+    $('toofarBody').innerHTML=`<strong>${name}</strong> sits about <span class="dist">${dist} miles</span> from the Pacific — outside beach-day range. Try a coastal town like Newport, Santa Monica, or Santa Barbara.`;
+    return;
+  }
 
-async function fetchData(lat, lon, name) {
-  currentLat = lat; currentLon = lon; currentName = name;
-  show('loading'); hide('content'); hide('errorState');
+  onlyShow('loading');
+  $('loadingText').textContent='READING CONDITIONS…';
 
-  try {
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m,uv_index&hourly=temperature_2m,weathercode,uv_index&temperature_unit=celsius&windspeed_unit=kmh&timezone=America%2FLos_Angeles&forecast_days=1`;
-    const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,wave_period&length_unit=imperial`;
+  try{
+    const wUrl=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m,uv_index&hourly=temperature_2m,weathercode,uv_index&temperature_unit=celsius&windspeed_unit=kmh&timezone=America%2FLos_Angeles&forecast_days=1`;
+    const mUrl=`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,wave_period&length_unit=imperial`;
+    const [wRes,mRes]=await Promise.allSettled([fetch(wUrl),fetch(mUrl)]);
+    if(wRes.status!=='fulfilled'||!wRes.value.ok)throw new Error('weather');
+    const wData=await wRes.value.json();
+    const c=wData.current;
+    const tempC=c.temperature_2m,tF=Math.round(tempC*9/5+32);
+    const uv=Math.round(c.uv_index),windKph=Math.round(c.windspeed_10m),wMph=Math.round(windKph*0.621),wmo=c.weathercode;
 
-    const [wRes, mRes] = await Promise.allSettled([fetch(weatherUrl), fetch(marineUrl)]);
+    $('placeName').textContent=name;
+    $('placeDist').textContent=dist<=2?'On the water':`${dist} mi to coast`;
+    $('temp').innerHTML=`${tF}<small>°F</small>`;
+    $('uv').textContent=uv;
+    $('uvLabel').innerHTML=`<span class="uv-dot uv-${uvClass(uv)}"></span>${uvLabel(uv)}`;
+    $('wind').innerHTML=`${wMph}<small> mph</small>`;
+    $('conditions').textContent=WMO[wmo]||'Unknown';
 
-    if (wRes.status !== 'fulfilled' || !wRes.value.ok) throw new Error('weather failed');
-    const wData = await wRes.value.json();
-    const c = wData.current;
-
-    const tempC = c.temperature_2m;
-    const tempF = Math.round((tempC*9/5)+32);
-    const uv = Math.round(c.uv_index);
-    const windKph = Math.round(c.windspeed_10m);
-    const windMph = Math.round(windKph*0.621);
-    const wmo = c.weathercode;
-
-    document.getElementById('temp').textContent = `${tempF}°F`;
-    document.getElementById('uv').textContent = uv;
-    document.getElementById('uvLabel').textContent = uvLabel(uv);
-    document.getElementById('wind').textContent = `${windMph} mph`;
-    document.getElementById('conditions').textContent = WMO[wmo] || 'Unknown';
-
-    let waveM = null;
-    if (mRes.status === 'fulfilled' && mRes.value.ok) {
-      try {
-        const mData = await mRes.value.json();
-        if (mData.current) {
-          waveM = mData.current.wave_height;
-          const period = mData.current.wave_period;
-          document.getElementById('waveHeight').textContent = waveM ? `${waveM.toFixed(1)} ft` : '—';
-          document.getElementById('wavePeriod').textContent = period ? `${Math.round(period)}s` : '—';
-          document.getElementById('surfRating').textContent = waveM ? surfRating(waveM * 0.3048) : '—';
-        }
-      } catch(e) {
-        document.getElementById('waveHeight').textContent = 'N/A';
-        document.getElementById('wavePeriod').textContent = 'N/A';
-        document.getElementById('surfRating').textContent = 'N/A';
-      }
-    } else {
-      document.getElementById('waveHeight').textContent = 'N/A (inland)';
-      document.getElementById('wavePeriod').textContent = '—';
-      document.getElementById('surfRating').textContent = '—';
+    // Surf
+    if(mRes.status==='fulfilled'&&mRes.value.ok){
+      try{
+        const mData=await mRes.value.json();
+        if(mData.current&&mData.current.wave_height!=null){
+          const wh=mData.current.wave_height,per=mData.current.wave_period;
+          $('waveHeight').innerHTML=`${wh.toFixed(1)}<small> ft</small>`;
+          $('wavePeriod').innerHTML=per?`${Math.round(per)}<small>s</small>`:'—';
+          $('surfRating').textContent=surfRating(wh*0.3048);
+        }else throw new Error('no marine');
+      }catch(e){$('waveHeight').textContent='N/A';$('wavePeriod').textContent='—';$('surfRating').textContent='—';}
+    }else{
+      $('waveHeight').textContent='N/A';$('wavePeriod').textContent='—';$('surfRating').textContent='—';
     }
 
-    const v = getVerdict(tempC, uv, windKph, wmo, waveM);
-    const verdictEl = document.getElementById('verdict');
-    verdictEl.className = `verdict ${v.cls}`;
-    document.getElementById('verdictEmoji').textContent = v.emoji;
-    document.getElementById('verdictTitle').textContent = v.title;
-    document.getElementById('verdictReason').textContent = v.reason;
+    // Verdict
+    const v=getVerdict(tempC,uv,windKph,wmo);
+    $('verdict').className=`verdict ${v.cls}`;
+    $('vEmoji').textContent=v.emoji;
+    $('vTitle').textContent=v.title;
+    $('vReason').textContent=v.reason;
 
-    const adviceEl = document.getElementById('uvAdvice');
-    adviceEl.className = `uv-advice ${uvClass(uv)}`;
-    adviceEl.textContent = uvAdvice(uv);
+    // Advice
+    $('advice').className=`advice ${uvClass(uv)}`;
+    $('advice').textContent=uvAdvice(uv);
 
-    const now = new Date();
-    const currentHour = now.getHours();
-    const hourlyTemps = wData.hourly.temperature_2m;
-    const hourlyWmo = wData.hourly.weathercode;
-    const hourlyUv = wData.hourly.uv_index;
-    const hourlyScroll = document.getElementById('hourlyScroll');
-    hourlyScroll.innerHTML = '';
-
-    for (let h = currentHour; h < Math.min(currentHour+8, 24); h++) {
-      const hTempF = Math.round((hourlyTemps[h]*9/5)+32);
-      const hUv = Math.round(hourlyUv[h]);
-      const hWmo = hourlyWmo[h];
-      const isBad = RAINY.includes(hWmo) || FOGGY.includes(hWmo);
-      const isBest = !isBad && hTempF >= 70 && hUv >= 2 && hUv <= 8;
-      const timeStr = h === 0 ? '12am' : h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h-12}pm`;
-      const card = document.createElement('div');
-      card.className = `hour-card${isBest?' best':isBad?' bad':''}`;
-      card.innerHTML = `<div class="hour-time">${timeStr}</div><div class="hour-icon">${WMO_ICON[hWmo]||'🌤️'}</div><div class="hour-temp">${hTempF}°F</div><div class="hour-uv">UV ${hUv}</div>`;
-      hourlyScroll.appendChild(card);
+    // Hourly
+    const now=new Date(),hr=now.getHours();
+    const ht=wData.hourly.temperature_2m,hw=wData.hourly.weathercode,hu=wData.hourly.uv_index;
+    const box=$('hourly');box.innerHTML='';
+    for(let h=hr;h<Math.min(hr+8,24);h++){
+      const tf=Math.round(ht[h]*9/5+32),u=Math.round(hu[h]),wc=hw[h];
+      const bad=RAINY.includes(wc)||FOGGY.includes(wc);
+      const best=!bad&&tf>=70&&u>=2&&u<=8;
+      const ts=h===0?'12a':h<12?`${h}a`:h===12?'12p':`${h-12}p`;
+      const el=document.createElement('div');
+      el.className=`hour${best?' best':bad?' bad':''}`;
+      el.innerHTML=`<div class="h-time">${ts}</div><div class="h-icon">${WMO_ICON[wc]||'🌤️'}</div><div class="h-temp">${tf}°</div><div class="h-uv">UV ${u}</div>`;
+      box.appendChild(el);
     }
 
-    document.getElementById('updated').textContent = `Updated ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})} · ${name}`;
+    // Live cams link
+    $('camsWrap').innerHTML=`<a href="https://www.surfline.com/search/${encodeURIComponent(name.split(',')[0])}" target="_blank" rel="noopener">📹 View live cams &amp; surf report for ${name.split(',')[0]} →</a>`;
 
-    hide('loading'); show('content');
+    $('stamp').textContent=`UPDATED ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})} · ${name.toUpperCase()}`;
 
-  } catch(e) {
-    hide('loading'); show('errorState');
+    onlyShow('content');
+  }catch(e){
+    onlyShow('failState');
   }
 }
 
-function selectBeach() {
-  const sel = document.getElementById('beachSelect');
-  const val = sel.value;
-  if (!val) return;
-  const name = sel.options[sel.selectedIndex].text;
-  const [lat,lon] = val.split(',').map(Number);
-  document.getElementById('searchInput').value = '';
-  document.getElementById('searchError').textContent = '';
-  fetchData(lat, lon, name);
-}
+/* ============ Autocomplete ============ */
+let debounceTimer=null,activeIdx=-1,currentResults=[];
 
-async function searchLocation() {
-  const query = document.getElementById('searchInput').value.trim();
-  if (!query) return;
-  const errEl = document.getElementById('searchError');
-  const inputEl = document.getElementById('searchInput');
-  errEl.textContent = '';
-  inputEl.classList.remove('error');
+const input=$('searchInput'),suggEl=$('suggestions');
 
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`);
-    const data = await res.json();
-    if (!data || data.length === 0) {
-      errEl.textContent = "Location not found — try again with a city or beach name.";
-      inputEl.classList.add('error');
-      return;
-    }
-    const place = data[0];
-    const lat = parseFloat(place.lat);
-    const lon = parseFloat(place.lon);
-    const name = place.display_name.split(',').slice(0,2).join(',');
-    document.getElementById('beachSelect').value = '';
-    fetchData(lat, lon, name);
-  } catch(e) {
-    errEl.textContent = "Could not search right now. Try again or use the dropdown.";
-    inputEl.classList.add('error');
-  }
-}
-
-document.getElementById('searchInput').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') searchLocation();
+input.addEventListener('input',()=>{
+  const q=input.value.trim();
+  input.classList.remove('error');
+  $('searchError').textContent='';
+  clearTimeout(debounceTimer);
+  if(q.length<2){closeSuggestions();return;}
+  suggEl.innerHTML='<div class="sugg-loading">Searching…</div>';
+  suggEl.classList.add('open');
+  debounceTimer=setTimeout(()=>fetchSuggestions(q),320);
 });
 
-function show(id) { document.getElementById(id).classList.remove('hidden'); }
-function hide(id) { document.getElementById(id).classList.add('hidden'); }
+async function fetchSuggestions(q){
+  try{
+    // Bias toward Southern California with a viewbox (but don't hard-restrict),
+    // pull more candidates, then re-rank so the best name match wins.
+    const viewbox='-121.5,32.5,-116.0,35.5'; // SoCal bounding box: left,top,right,bottom-ish
+    const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=12&countrycodes=us&viewbox=${viewbox}&bounded=0`;
+    const res=await fetch(url,{headers:{'Accept':'application/json'}});
+    let data=await res.json();
+    if(!data||data.length===0){
+      suggEl.innerHTML='<div class="sugg-loading">No matches — keep typing</div>';
+      currentResults=[];return;
+    }
 
-fetchData(33.6189, -117.9289, 'Newport Beach, CA');
+    const ql=q.toLowerCase();
+    // SoCal center (rough) for proximity tie-breaks
+    const cLat=33.7,cLon=-118.0;
+    const scored=data.map(p=>{
+      const a=p.address||{};
+      const main=a.city||a.town||a.village||a.hamlet||a.suburb||a.neighbourhood||p.display_name.split(',')[0];
+      const nameL=main.toLowerCase();
+      const lat=parseFloat(p.lat),lon=parseFloat(p.lon);
+      const dist=haversine(lat,lon,cLat,cLon);
+      let score=0;
+      if(nameL===ql)score+=1000;                // exact name
+      else if(nameL.startsWith(ql))score+=500;  // prefix match (Irvine for "ir")
+      else if(nameL.includes(' '+ql))score+=200;// word-start match
+      else if(nameL.includes(ql))score+=50;     // substring anywhere
+      if(a.state==='California')score+=120;      // in-state boost
+      score-=Math.min(dist,400)*0.15;            // closer to SoCal ranks higher
+      score+=(parseFloat(p.importance)||0)*20;   // mild prominence nudge
+      return{main,sub:[a.state].filter(Boolean).join(', '),lat,lon,
+             full:p.display_name.split(',').slice(0,2).join(','),score};
+    });
+
+    // De-dupe by name+state, sort by score
+    const seen=new Set();
+    currentResults=scored.sort((x,y)=>y.score-x.score).filter(r=>{
+      const k=r.main+'|'+r.sub;
+      if(seen.has(k))return false;seen.add(k);return true;
+    }).slice(0,6);
+
+    renderSuggestions();
+  }catch(e){
+    suggEl.innerHTML='<div class="sugg-loading">Search unavailable — try the Check button</div>';
+  }
+}
+
+function renderSuggestions(){
+  activeIdx=-1;
+  suggEl.innerHTML=currentResults.map((r,i)=>`
+    <div class="sugg-item" data-i="${i}">
+      <svg class="mini-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <span class="s-main">${r.main}</span>${r.sub?`<span class="s-sub">${r.sub}</span>`:''}
+    </div>`).join('');
+  suggEl.classList.add('open');
+  suggEl.querySelectorAll('.sugg-item').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const r=currentResults[+el.dataset.i];
+      input.value=r.full;
+      loadLocation(r.lat,r.lon,r.full);
+    });
+  });
+}
+
+function closeSuggestions(){suggEl.classList.remove('open');suggEl.innerHTML='';activeIdx=-1;}
+
+// Keyboard nav
+input.addEventListener('keydown',e=>{
+  const items=suggEl.querySelectorAll('.sugg-item');
+  if(e.key==='ArrowDown'&&items.length){e.preventDefault();activeIdx=Math.min(activeIdx+1,items.length-1);highlight(items);}
+  else if(e.key==='ArrowUp'&&items.length){e.preventDefault();activeIdx=Math.max(activeIdx-1,0);highlight(items);}
+  else if(e.key==='Enter'){
+    e.preventDefault();
+    if(activeIdx>=0&&currentResults[activeIdx]){
+      const r=currentResults[activeIdx];input.value=r.full;loadLocation(r.lat,r.lon,r.full);
+    }else{directSearch();}
+  }else if(e.key==='Escape'){closeSuggestions();}
+});
+function highlight(items){items.forEach((el,i)=>el.classList.toggle('active',i===activeIdx));}
+
+// Click outside closes
+document.addEventListener('click',e=>{if(!e.target.closest('.finder'))closeSuggestions();});
+
+// "Check" button = best match or geocode the raw text
+$('goBtn').addEventListener('click',directSearch);
+
+async function directSearch(){
+  const q=input.value.trim();
+  if(!q)return;
+  if(currentResults.length){
+    const r=currentResults[0];input.value=r.full;loadLocation(r.lat,r.lon,r.full);return;
+  }
+  $('searchError').textContent='';
+  onlyShow('loading');$('loadingText').textContent='FINDING LOCATION…';
+  try{
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=1&countrycodes=us&viewbox=-121.5,32.5,-116.0,35.5&bounded=0`);
+    const data=await res.json();
+    if(!data||!data.length){
+      ['loading','toofar','failState','content'].forEach(x=>hide(x));
+      input.classList.add('error');
+      $('searchError').textContent='No match for that name — try again.';
+      return;
+    }
+    const p=data[0];
+    loadLocation(parseFloat(p.lat),parseFloat(p.lon),p.display_name.split(',').slice(0,2).join(','));
+  }catch(e){
+    onlyShow('failState');
+  }
+}
+
+/* ============ Quick chips ============ */
+$('quickChips').innerHTML=QUICK.map((q,i)=>`<button class="chip" data-i="${i}">${q.n}</button>`).join('');
+$('quickChips').querySelectorAll('.chip').forEach(el=>{
+  el.addEventListener('click',()=>{const q=QUICK[+el.dataset.i];input.value=q.n;loadLocation(q.lat,q.lon,q.n+', CA');});
+});
+
+/* ============ Info legends ============ */
+function openLegend(id){
+  document.querySelectorAll('.legend-backdrop').forEach(l=>l.classList.remove('open'));
+  $(id).classList.add('open');
+}
+function closeLegends(){document.querySelectorAll('.legend-backdrop').forEach(l=>l.classList.remove('open'));}
+$('uvInfoBtn').addEventListener('click',e=>{e.stopPropagation();openLegend('uvBackdrop');});
+$('surfInfoBtn').addEventListener('click',e=>{e.stopPropagation();openLegend('surfBackdrop');});
+document.querySelectorAll('.legend-close').forEach(b=>{
+  b.addEventListener('click',e=>{e.stopPropagation();closeLegends();});
+});
+// Click on dimmed backdrop (outside the card) closes
+document.querySelectorAll('.legend-backdrop').forEach(bd=>{
+  bd.addEventListener('click',e=>{if(e.target===bd)closeLegends();});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLegends();});
+
+/* ============ Boot ============ */
+loadLocation(33.6189,-117.9289,'Newport Beach, CA');
 </script>
-
 </body>
 </html>
